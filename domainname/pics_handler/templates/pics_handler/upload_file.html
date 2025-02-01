@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block content %}
+<h1>{{ text_page }}</h1>
+
+<!-- Цвета ответов -->
+<div id="upload-message" style="color: green; display: none;"></div>
+<div id="error-message" style="color: #9c0c3f; display: none;"></div>
+
+<!-- Форма Выбрать файл и кнопка Загрузить. Отправляет запрос на текущую страницу -->
+<form id="uploadForm" action="" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="files" accept="image/jpeg, image/png, image/gif" multiple required>
+    <button type="submit">Загрузить</button>
+</form>
+
+<script>
+document.getElementById("uploadForm").onsubmit = async function(event) {
+    event.preventDefault();
+
+    // Извлечение данных из формы
+    let formData = new FormData(this);
+
+    // Формирование и отправка запроса
+    // Форма загрузки файлов (uploadForm) работает без X-CSRFToken,
+    // потому что FormData уже содержит CSRF-токен.
+    // запрос уходит на текущую страницу по параметру this.action
+    let response = await fetch(this.action, {
+        method: "POST",
+        body: formData
+    });
+
+    let result = await response.json();
+
+    if (!response.ok) {
+        document.getElementById("error-message").textContent = result.detail;
+        document.getElementById("error-message").style.display = "block";
+    } else {
+        document.getElementById("upload-message").textContent = result.detail;
+        document.getElementById("upload-message").style.display = "block";
+    }
+};
+</script>
+
+{% endblock %}

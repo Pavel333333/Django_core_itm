@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+
+{% load static %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{{ title }}{% endblock %}</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
+    <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="menu-container">
+    <ul>
+        {% for n in menu %}
+            {% if not forloop.last %}
+                <li>{% else %}<li class="last">{% endif %}
+                    <a href="{% url n.url_name %}">{{ n.title }}</a>
+                </li>
+        {% endfor %}
+    </ul>
+</div>
+    {% block content %}{% endblock %}
+</body>
+{% block extra_js %}{% endblock %}
+</html>

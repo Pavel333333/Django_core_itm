@@ -1,0 +1,132 @@
+/* Обертка формы аутентификации и регистрации */
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 50px);
+    background-color: #f5f5f5;
+    position: relative;
+    z-index: 1;
+}
+
+/* Общий стиль контейнера */
+.auth-container {
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Заголовок формы */
+.auth-container h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Стиль формы */
+.auth-container form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Поля формы */
+.auth-container label,
+.auth-container input,
+.auth-container a {
+    width: 100%;
+}
+
+/* Поля ввода */
+.auth-container input {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.auth-container input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* Кнопка */
+.auth-container button {
+    margin: 20px auto 10px auto;
+    display: block;
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+}
+
+.auth-container button:hover {
+    background-color: #218838;
+}
+
+/* Ссылки */
+.auth-container a {
+    display: block;
+    margin-top: 10px;
+    text-align: center;
+    color: #007bff;
+    text-decoration: none;
+}
+
+.auth-container a:hover {
+    text-decoration: underline;
+}
+
+/* Центрирование всех текстовых элементов */
+.auth-container p,
+.auth-container .login-link {
+    text-align: center;
+    width: 100%;
+}
+
+/* Ошибки */
+.error {
+    color: red;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    width: 100%;
+}
+
+/* Требования к паролю */
+.password-requirements {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #555;
+    width: 100%;
+    text-align: left;
+}
+
+.password-requirements ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.password-requirements li {
+    margin-bottom: 5px;
+}
+
+.auth-message {
+    display: flex;
+    justify-content: center;  /* Центрируем по горизонтали */
+    align-items: center;      /* Центрируем по вертикали */
+    height: 100vh;            /* Занимаем всю высоту экрана */
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;       /* Центрируем текст внутри блока */
+}

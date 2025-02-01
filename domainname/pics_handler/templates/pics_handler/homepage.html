@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<h1>{{ text_page }}</h1>
+
+<!-- Блок для отображения картинок -->
+<div class="image-grid">
+    {% for doc in user_docs %}
+        <div class="image-item">
+            <img class="preview-img" src="/media/{{ doc.file_original_name }}" alt="{{ doc.file_original_name }}" style="width: 100px; height: 100px;">
+            <p>ID: {{ doc.id }}</p>
+            <p>Название файла: {{ doc.file_original_name }}</p>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Модальное окно (скрытое) -->
+<div id="imageModal" class="modal">
+    <span class="close">&times;</span>
+    <div class="modal-content">
+        <img id="modalImg" src="" alt="">
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("imageModal");
+    const modalImg = document.getElementById("modalImg");
+    const closeBtn = document.querySelector(".close");
+
+    // Слушаем клик по картинкам с классом .preview-img
+    document.querySelectorAll(".preview-img").forEach(img => {
+        img.addEventListener("click", function () {
+            console.log("Картинка кликнута");  // Выводим в консоль, чтобы проверить
+            modal.style.display = "flex";  // Открываем модальное окно
+            modalImg.src = this.src;  // Загружаем изображение в модальном окне
+        });
+    });
+
+    // Закрытие модального окна
+    closeBtn.addEventListener("click", function () {
+        modal.style.display = "none";  // Закрытие окна при клике на кнопку
+    });
+
+    // Закрытие модального окна при клике на фон
+    modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+});
+</script>
+{% endblock %}

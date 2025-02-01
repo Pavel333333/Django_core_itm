@@ -1,0 +1,135 @@
+/* Убираем стандартные отступы */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    box-sizing: border-box; /* Учитываем padding и границы */
+    position: relative; /* Фиксируем общий поток страницы */
+}
+
+/* Оформление для контейнера меню */
+.menu-container {
+    display: flex;
+    justify-content: flex-end; /* Меню справа */
+    align-items: center; /* Центрирование по вертикали */
+    padding: 10px 55px;
+    background-color: #ffffff; /* Белый фон меню */
+    border-bottom: 1px solid #0090fd; /* Синяя линия */
+    box-sizing: border-box; /* Учитываем границы и padding */
+    height: 50px; /* Фиксированная высота для всех страниц */
+    z-index: 10; /* Гарантируем, что меню поверх других элементов */
+    position: relative; /* Чтобы избежать влияния внешних блоков */
+}
+
+/* Стили для списка */
+ul {
+    list-style: none; /* Убираем стандартные маркеры списка */
+    margin: 0;
+    padding: 0;
+    display: flex; /* Делаем список горизонтальным */
+    gap: 15px; /* Расстояние между пунктами меню */
+}
+
+/* Стили для пунктов меню */
+ul li {
+    display: inline; /* Горизонтальное выравнивание элементов списка */
+}
+
+ul li a {
+    text-decoration: none; /* Убираем подчеркивание у ссылок */
+    color: #007bff; /* Цвет ссылок */
+    padding: 5px 10px; /* Внутренние отступы для удобства */
+    border-radius: 4px; /* Скругленные края */
+}
+
+/* Стили при наведении на ссылку */
+ul li a:hover {
+    background-color: #e2e6ea; /* Цвет фона при наведении */
+    color: #0056b3; /* Цвет текста при наведении */
+}
+
+/* Стили для последнего пункта */
+ul li.last a {
+    font-weight: bold; /* Жирный шрифт для последнего элемента */
+}
+
+/* Стили для отображения картинок на главной. Контейнер для 3 картинок */
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 равных колонки */
+    gap: 20px; /* Расстояние между изображениями */
+    width: 89%; /* Отступы по бокам (оставляем 10% слева и справа) */
+    margin: 0 auto; /* Центрирование */
+}
+
+
+/* Стили для блока картинки */
+.image-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Центрирование содержимого */
+    justify-content: center;
+    overflow: hidden; /* Обрезка лишнего */
+    max-width: 100%; /* Не выходить за пределы сетки */
+}
+
+/* Картинки */
+.image-item img {
+    width: 100%; /* Заполняет родительский контейнер */
+    height: auto; /* Пропорциональное масштабирование */
+    max-height: 400px; /* Ограничение высоты */
+    object-fit: contain; /* Вписывание без искажения */
+}
+
+/* Модальное окно */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); /* Прозрачный фон */
+    justify-content: center;
+    align-items: center;
+}
+
+/* Контент внутри модального окна */
+.modal-content {
+    max-width: 90%;
+    max-height: 90%;
+}
+
+/* Картинка внутри модального окна */
+.modal-content img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* Кнопка закрытия */
+.close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    color: white;
+    font-size: 30px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.preview-img {
+    cursor: pointer; /* Курсор руки */
+    transition: transform 0.2s ease-in-out; /* Плавное увеличение */
+}
+
+.preview-img:hover {
+    transform: scale(1.03); /* Увеличение картинки на 3% */
+}
+
+/* Ширина поля Введите id на странице удаления картинок */
+.id-input {
+    width: 300px;
+}

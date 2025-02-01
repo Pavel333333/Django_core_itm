@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %} {{ title }} {% endblock %}
+
+{% block content %}
+<h1>{{ text_page }}</h1>
+
+<!-- Цвета ответов об успехе / ошибке -->
+<div id="upload-message" style="color: green; display: none;"></div>
+<div id="error-message" style="color: #9c0c3f; display: none;"></div>
+
+<!-- Форма ввода ID -->
+<form id="analyzeForm" action="" method="post">
+    {% csrf_token %}
+    <input type="text" name="doc_ids" required placeholder="Введите ID документов, разделенных запятой" class="id-input">
+    <button type="submit">Проанализировать</button>
+</form>
+
+<!-- Контейнер для вывода изображений и текста -->
+<div id="resultsContainer" class="image-grid"></div>
+
+<!-- Модальное окно для увеличения картинок -->
+<div id="imageModal" class="modal">
+    <span class="close">&times;</span>
+    <div class="modal-content">
+        <img id="modalImg" src="" alt="">
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("analyzeForm").onsubmit = async function(event) {
+    event.preventDefault();
+
+    document.getElementById("error-message").style.display = "none";
+    document.getElementById("upload-message").style.display = "none";
+    document.getElementById("resultsContainer").innerHTML = "";
+
+    let formData = new FormData(this);
+    let docIdsStr = formData.get('doc_ids').trim();
+    let docIds = docIdsStr.split(',').map(id => id.trim()).filter(id => id !== "");
+
+    let invalidIds = docIds.filter(id => isNaN(id) || id === "" || /[^0-9]/.test(id));
+
+    if (invalidIds.length > 0) {
+        document.getElementById("error-message").textContent = "Ошибка: ID должен быть числовым и разделяться запятой.";
+        document.getElementById("error-message").style.display = "block";
+        return;
+    }
+
+    let idsToSend = docIds.join(',');
+
+    let response = await fetch(this.action, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": formData.get('csrfmiddlewaretoken'),
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({ 'doc_ids': idsToSend })
+    });
+
+    let result = await response.json();
+
+    if (!response.ok) {
+        document.getElementById("error-message").textContent = result.detail;
+        document.getElementById("error-message").style.display = "block";
+    } else {
+        displayResults(result.detail);  // Вызов функции отображения картинок и текста
+    }
+};
+
+// Функция отображения результатов
+function displayResults(results) {
+    const container = document.getElementById("resultsContainer");
+    container.innerHTML = "";  // Очищаем контейнер перед добавлением новых данных
+
+    for (let docId in results) {
+        let docData = results[docId];
+
+        let div = document.createElement("div");
+        div.classList.add("image-item");
+
+        let img = document.createElement("img");
+        img.src = `/media/${docData.file_path}`;
+        img.alt = `Документ ${docId}`;
+        img.classList.add("preview-img");
+        img.style.width = "100px";
+        img.style.height = "100px";
+
+        let text = document.createElement("p");
+        text.textContent = docData.text;
+
+        div.appendChild(img);
+        div.appendChild(document.createElement("br"));
+        div.appendChild(text);
+        container.appendChild(div);
+    }
+}
+
+// Увеличение изображений
+document.addEventListener("DOMContentLoaded", function () {
+    const modal = document.getElementById("imageModal");
+    const modalImg = document.getElementById("modalImg");
+    const closeBtn = document.querySelector(".close");
+
+    document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("preview-img")) {
+            modal.style.display = "flex";
+            modalImg.src = event.target.src;
+        }
+    });
+
+    closeBtn.addEventListener("click", function () {
+        modal.style.display = "none";
+    });
+
+    modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+            modal.style.display = "none";
+        }
+    });
+});
+
+</script>
+
+{% endblock %}
