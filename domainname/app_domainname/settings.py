@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-rtza(jv20f%@i%8)+1=*&ucxd+s)c@3@jlp7%bg7dee*5#gh@_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1']
 
@@ -139,8 +139,10 @@ ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
 # В зависимости от среды, присваиваем нужный URL
 if ENVIRONMENT == 'production':
     BASE_FILE_URL = 'http://127.0.0.1:3333/files'
+    DEBUG = False
 else:
     BASE_FILE_URL = 'http://127.0.0.1:8001/files'
+    DEBUG = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
