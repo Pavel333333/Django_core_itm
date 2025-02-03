@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'pics_handler.apps.HomepageConfig',
     'orders.apps.OrdersConfig',
     'registration.apps.AuthenticationConfig',
+    'whitenoise.runserver_nostatic',
 ]
 
 MIDDLEWARE = [
@@ -52,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'app_domainname.urls'
@@ -130,16 +132,22 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static",]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # Папка для собранных статических файлов по команде collectstatic в докер
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'                         # URL для доступа к файлам
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Путь на сервере для сохранения файлов
+WHITENOISE_MEDIA_PREFIX = "/media/"
 
 # Получаем переменную окружения для среды (если не установлена, по умолчанию 'development')
 ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
 
 # В зависимости от среды, присваиваем нужный URL
 if ENVIRONMENT == 'production':
-    BASE_FILE_URL = 'http://127.0.0.1:3333/files'
+    BASE_FILE_URL = 'http://container_fastapi_app:8000/files'
     DEBUG = False
+    # Для продакшн-режима Django будет обслуживать статические файлы
+    # добавляет хеши к именам файлов, предотвращая кэширование устаревших версий файлов браузерами
+    # STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 else:
     BASE_FILE_URL = 'http://127.0.0.1:8001/files'
     DEBUG = True

@@ -15,8 +15,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.views.static import serve
 
+from app_domainname import settings
 from pics_handler.views import page_not_found
 
 
@@ -26,5 +28,12 @@ urlpatterns = [
     path('', include('orders.urls')),
     path('', include('registration.urls')),
 ]
+
+# Это позволяет джанго на проде отображать картинки
+
+if not settings.DEBUG:
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
 
 handler404 = page_not_found

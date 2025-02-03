@@ -1,0 +1,39 @@
+networks:
+  mynetwork:
+    external: true
+
+# docker network create mynetwork - перед созданием контейнеров создаётся общая сеть для двух проектов
+
+services:
+  db_django:
+    image: postgres:latest
+    container_name: container_django_db
+    environment:
+      - POSTGRES_DB=django_core_itm
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    env_file:
+      - .env-not-dev
+    ports:
+      - "5434:5432" # первая цифра внешний порт, вторая - какой порт слушается внутри контейнера
+    networks:
+      - mynetwork
+
+  app_django:
+    image: app_django_itm
+    build:
+      context: .
+    container_name: container_django_app
+    command: ["/domainname/app.sh"]
+    env_file:
+      - .env-not-dev
+    ports:
+      - "5555:8000" # первая цифра внешний порт, вторая - какой порт слушается внутри контейнера
+    depends_on:
+      - db_django
+    volumes:
+      - ./media:/domainname/media # создание папки media в контейнере
+      - ./static:/domainname/static  # Путь к папке статики на хосте
+     # - ./staticfiles:/domainname/staticfiles # папка для всех статических файлов, собранных докером
+    networks:
+      - mynetwork
