@@ -1,3 +1,4 @@
+import json
 import os.path
 import time
 
@@ -8,6 +9,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.http import HttpResponseNotFound, JsonResponse
 from django.shortcuts import render
+from requests import RequestException
 
 from app_domainname.constants import menu
 from pics_handler.models import Docs, UsersToDocs
@@ -33,26 +35,34 @@ def homepage(request):
 
 @login_required(login_url='/login/')
 def upload_file(request):
+    """
+    View для транзита файлов на DRF.
+    """
 
     if request.method == 'POST' and request.FILES.getlist('files'):
 
         files = request.FILES.getlist('files')
+        access_token = getattr(request, 'jwt_access_token', None)  # Извлекаем access_token из middleware
+        print(f'3 3 3 access_token во view {access_token}')
+
+        if not access_token:
+            return JsonResponse({'detail': 'Access token missing'}, status=401)
 
         for file in files:
             if not file.content_type.startswith('image/'):
                 return JsonResponse({'detail': 'Только изображения (jpeg, png, gif)!'}, status=415)
 
-            # **Сохранение файла в media**
+            # Сохранение файла в media
             save_file = default_storage.save(file.name, ContentFile(file.read())) # относительный путь
             file_path = default_storage.path(save_file)                           # полный путь
+            drf_transit_url = settings.DRF_API_BASE_URL + '/transit_files/'
 
-            fastapi_upload_url = settings.BASE_FILE_URL + '/upload_doc'
-
-            # **Отправка файла в другой сервис**
+            # Отправляем файл в DRF с токеном
             with open(default_storage.path(save_file), 'rb') as f:
                 response = requests.post(
-                    fastapi_upload_url,
-                    files={"file": (file.name, f, file.content_type)}
+                    drf_transit_url,
+                    files={"file": (file.name, f, file.content_type)},
+                    headers={"Authorization": f"Bearer {access_token}", "Host": settings.DRF_API_HOST}
                 )
 
             if response.status_code != 200:
@@ -65,9 +75,11 @@ def upload_file(request):
         return JsonResponse({'detail': 'Файлы успешно загружены! Перейдите на главную страницу для просмотра'},
                             status=200)
 
-    data = {'title': 'Загрузка картинок', 'text_page': 'Загрузите картинки и смотрите их на главной странице',
-            'menu': menu}
-    return render(request, 'pics_handler/upload_file.html', context=data)
+    if request.method == 'GET':
+
+        data = {'title': 'Загрузка картинок', 'text_page': 'Загрузите картинки и смотрите их на главной странице',
+                'menu': menu}
+        return render(request, 'pics_handler/upload_file.html', context=data)
 
 
 # @user_passes_test(lambda u: u.is_superuser, login_url='login')
@@ -77,6 +89,10 @@ def delete_doc(request):
 
     if request.method == 'POST':
         doc_ids_str = request.POST.get('doc_ids', '')
+        access_token = getattr(request, 'jwt_access_token', None)  # Извлекаем access_token из middleware
+
+        if not access_token:
+            return JsonResponse({'detail': 'Access token missing'}, status=401)
 
         # Разделяем строку на ID и проверяем на валидность
         doc_ids = [int(doc_id.strip()) for doc_id in doc_ids_str.split(',') if doc_id.strip().isdigit()]
@@ -84,70 +100,100 @@ def delete_doc(request):
         if not doc_ids:
             return JsonResponse({'detail': "Ошибка: Не были переданы корректные ID документов."}, status=400)
 
-        # Отправка запросов на FastAPI для удаления каждого документа
-        fastapi_delete_url = settings.BASE_FILE_URL + '/doc_delete'
+        # Отправка запроса на FastAPI для удаления каждого документа через DRF
+        drf_delete_url = settings.DRF_API_BASE_URL + '/transit_delete/'
 
-        for doc_id in doc_ids:
-            response = requests.delete(f"{fastapi_delete_url}/{doc_id}")
+        response = requests.post(
+            drf_delete_url,
+            data={"doc_ids": json.dumps(doc_ids)},  # Отправляем список как JSON
+            headers={"Authorization": f"Bearer {access_token}", "Host": settings.DRF_API_HOST}
+        )
 
-            if response.status_code != 204:
-                return JsonResponse({'detail': f"Ошибка при удалении документа с ID {doc_id}: {response.text}"},
-                                     status=response.status_code)
+        if response.status_code not in [200, 207]:  # Обрабатываем 200 и 207
+            return JsonResponse({'detail': f"Ошибка при удалении: {response.text}"}, status=response.status_code)
 
-            # Удаление записи из базы данных Django
+        # Получаем подтверждённые удалённые id от DRF
+        result = response.json()
+        deleted_ids = result.get("deleted_ids", [])
+
+        # Удаляем только подтверждённые id в Django
+        for doc_id in deleted_ids:
             try:
                 doc = Docs.objects.get(id=doc_id)
-                # Получаем путь к файлу
-                file_path = doc.file_path.path
+                file_path = doc.file_path.path  # получаем путь к файлу
 
-                # Проверяем, существует ли файл, и удаляем его
-                if os.path.exists(file_path):
-                    os.remove(file_path)
+                if os.path.exists(file_path):  # Проверяем, существует ли файл
+                    os.remove(file_path)  # удаляем файл
 
-                # Удаляем запись из базы данных
                 doc.delete()
-
             except Docs.DoesNotExist:
-                return JsonResponse({'detail': f"Документ с ID {doc_id} не найден в базе данных."}, status=404)
+                pass  # Игнорируем, если запись уже удалена
 
+
+        if response.status_code == 207:
+            return JsonResponse({
+                'detail': 'Частичное удаление',
+                'deleted_ids': deleted_ids,
+                'failed_ids': result.get("failed_ids", [])
+            }, status=207)
         return JsonResponse({'detail': 'Документы успешно удалены!'})
 
-    data = {'title': 'Удаление картинок', 'text_page': text_page, 'menu': menu, 'is_admin': is_admin}
-    return render(request, 'pics_handler/delete_doc.html', context=data)
+    if request.method == 'GET':
+
+        data = {'title': 'Удаление картинок', 'text_page': text_page, 'menu': menu, 'is_admin': is_admin}
+        return render(request, 'pics_handler/delete_doc.html', context=data)
 
 
 @login_required(login_url='/login/')
 def doc_analyze(request):
-
+    """
+    View для запуска анализа текста через DRF/FastAPI и возврата результатов на фронт.
+    Отправляет список id на /transit_analyze/ и получает текст через агрегированный ответ.
+    """
     if request.method == 'POST':
-
         # получаем список id с фронта
         doc_ids_str = request.POST.get('doc_ids', '')
+        access_token = getattr(request, 'jwt_access_token', None)  # Извлекаем access_token из middleware
+
+        if not access_token:
+            return JsonResponse({'detail': 'Access token missing'}, status=401)
 
         # Разделяем строку на ID и проверяем на валидность
         doc_ids = [int(doc_id.strip()) for doc_id in doc_ids_str.split(',') if doc_id.strip().isdigit()]
-
         if not doc_ids:
             return JsonResponse({'detail': "Ошибка: Не были переданы корректные ID документов."}, status=400)
 
-        # Отправка запросов на FastAPI для отправки запроса анализа каждого документа на Селери
-        fastapi_analyze_url = settings.BASE_FILE_URL + '/doc_analyze'
-        fastapi_get_text_url = settings.BASE_FILE_URL + '/get_text'
+        # URL для запуска анализа через DRF
+        drf_analyze_url = settings.DRF_API_BASE_URL + '/transit_analyze/'
 
-        for doc_id in doc_ids:
-            response_analyze = requests.post(fastapi_analyze_url, json={"id": doc_id})
-            if response_analyze.status_code != 200:
-                return JsonResponse({'detail': f"Ошибка при попытке проанализировать документ с ID {doc_id}: "
-                                               f"{response_analyze.text}"}, status=response_analyze.status_code)
+        try:
+            # Отправляем список id одним запросом
+            response = requests.post(
+                drf_analyze_url,
+                json={"doc_ids": doc_ids},    # data={"doc_ids": json.dumps(doc_ids)},  # Список как JSON
+                headers={"Authorization": f"Bearer {access_token}", "Host": settings.DRF_API_HOST},
+                timeout=30)  # Таймаут 5 секунд
+            response.raise_for_status()  # Вызовет исключение, если статус не 2xx
+        except RequestException as e:
+            return JsonResponse({"error": "Не удалось обработать запрос"}, status=500)
 
-        # Ждем обработки
-        time.sleep(3)  # Ожидание 3 секунды перед получением текста
+        # Обрабатываем ответ от DRF
+        if response.status_code not in [200, 207]:
+            return JsonResponse({'detail': f"Ошибка при анализе: {response.text}"}, status=response.status_code)
 
+        # Получаем результаты анализа
+        result = response.json()
+        analyzed_texts = result.get("analyzed_texts", {})
+        failed_ids = result.get("failed_ids", [])
+
+        # Формируем ответ для фронта
         results = {}
-
         for doc_id in doc_ids:
-            response_get_text = requests.get(f"{fastapi_get_text_url}/{doc_id}")
-            text = response_get_text.text if response_get_text.status_code == 200 else "Ошибка загрузки текста"
+            doc_id_str = str(doc_id)  # DRF вернёт ключи как строки из JSON
+            if doc_id_str in analyzed_texts:
+                text = analyzed_texts[doc_id_str]
+            else:
+                text = failed_ids.get(doc_id_str, {}).get("error", "Ошибка загрузки текста")
 
             # Получаем путь к файлу
             try:
@@ -158,37 +204,64 @@ def doc_analyze(request):
 
             results[doc_id] = {"file_path": file_path, "text": text}
 
+        # Возвращаем результат
+        if failed_ids:
+            return JsonResponse({'detail': 'Частичный анализ', 'results': results, 'failed_ids': failed_ids},
+                                status=207)
         return JsonResponse({'detail': results})
 
-    data = {'title': 'Анализ текста картинки', 'text_page': 'Введите id картинок для анализа текста', 'menu': menu}
-    return render(request, 'pics_handler/doc_analyze.html', context=data)
+    if request.method == 'GET':
+        data = {'title': 'Анализ текста картинки', 'text_page': 'Введите id картинок для анализа текста', 'menu': menu}
+        return render(request, 'pics_handler/doc_analyze.html', context=data)
 
 
 @login_required(login_url='/login/')
 def get_text(request):
-
+    """
+    View для получения текста из базы FastAPI через DRF и возврата на фронт.
+    Отправляет список id на /transit_get_text/ для получения текста.
+    """
     if request.method == 'POST':
-
-        # получаем список id с фронта
+        # Получаем список id с фронта
         doc_ids_str = request.POST.get('doc_ids', '')
-        print(f'первый принт {doc_ids_str}')
+        access_token = getattr(request, 'jwt_access_token', None)
+
+        if not access_token:
+            return JsonResponse({'detail': 'Access token missing'}, status=401)
 
         # Разделяем строку на ID и проверяем на валидность
         doc_ids = [int(doc_id.strip()) for doc_id in doc_ids_str.split(',') if doc_id.strip().isdigit()]
-        print(f'второй принт {doc_ids}')
-
         if not doc_ids:
             return JsonResponse({'detail': "Ошибка: Не были переданы корректные ID документов."}, status=400)
 
-        # Отправка запроса на FastAPI для отправки запроса на получение текста каждого документа
-        fastapi_get_text_url = settings.BASE_FILE_URL + '/get_text'
-        print(f'третий принт {fastapi_get_text_url}')
+        # URL для получения текста через DRF
+        drf_get_text_url = f"{settings.DRF_API_BASE_URL}/transit_get_text/"
 
+        # Отправляем список id одним запросом
+        response = requests.post(
+            drf_get_text_url,
+            data={"doc_ids": json.dumps(doc_ids)},  # Список как JSON
+            headers={"Authorization": f"Bearer {access_token}", "Host": settings.DRF_API_HOST}
+        )
+
+        # Обрабатываем ответ от DRF
+        if response.status_code not in [200, 207]:
+            return JsonResponse({'detail': f"Ошибка при получении текста: {response.text}"}, status=response.status_code)
+
+        # Получаем результаты
+        result = response.json()
+        retrieved_texts = result.get("retrieved_texts", {})
+        failed_ids = result.get("failed_ids", [])
+        from_cache = result.get("from_cache", False)  # Словарь {doc_id: boolean} из DRF
+
+        # Формируем ответ для фронта
         results = {}
-
         for doc_id in doc_ids:
-            response_get_text = requests.get(f"{fastapi_get_text_url}/{doc_id}")
-            text = response_get_text.text if response_get_text.status_code == 200 else "Ошибка загрузки текста"
+            doc_id_str = str(doc_id)  # DRF вернёт ключи как строки из JSON
+            if doc_id_str in retrieved_texts:
+                text = retrieved_texts[doc_id_str]
+            else:
+                text = failed_ids.get(doc_id_str, {}).get("error", "Ошибка загрузки текста")
 
             # Получаем путь к файлу
             try:
@@ -197,12 +270,16 @@ def get_text(request):
             except Docs.DoesNotExist:
                 file_path = ""
 
-            results[doc_id] = {"file_path": file_path, "text": text}
+            results[doc_id] = {"file_path": file_path, "text": text, "from_cache": from_cache.get(doc_id_str, False)}
 
+        # Возвращаем результат
+        if failed_ids:
+            return JsonResponse({'detail': 'Частичное получение текста', 'results': results, 'failed_ids': failed_ids}, status=207)
         return JsonResponse({'detail': results})
 
-    data = {'title': 'Получить текст картинки', 'text_page': 'Введите id картинок для получения текста', 'menu': menu}
-    return render(request, 'pics_handler/get_text.html', context=data)
+    if request.method == 'GET':
+        data = {'title': 'Получить текст картинки', 'text_page': 'Введите id картинок для получения текста', 'menu': menu}
+        return render(request, 'pics_handler/get_text.html', context=data)
 
 
 def page_not_found(request, exception):

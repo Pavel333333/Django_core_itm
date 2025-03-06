@@ -1,8 +1,8 @@
 from django.conf.urls.static import static
-from django.urls import path, register_converter
+from django.urls import path
 
 from app_domainname import settings
-from . import views, converters
+from . import views
 
 urlpatterns = [
     path('', views.homepage, name='homepage'),                                     # http://127.0.0.1:8000/

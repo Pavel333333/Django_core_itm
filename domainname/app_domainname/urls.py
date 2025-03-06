@@ -37,3 +37,5 @@ if not settings.DEBUG:
     ]
 
 handler404 = page_not_found
+
+admin.site.site_header = 'Панель администрирования'

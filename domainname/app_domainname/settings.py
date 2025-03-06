@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+
 from dotenv import load_dotenv
 import os
 
@@ -21,8 +22,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
+load_dotenv()
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-rtza(jv20f%@i%8)+1=*&ucxd+s)c@3@jlp7%bg7dee*5#gh@_'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG = True
@@ -54,7 +57,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'registration.middleware.JWTMiddleware',  # Middleware для управления JWT-токенами
 ]
+
 
 ROOT_URLCONF = 'app_domainname.urls'
 
@@ -81,8 +86,6 @@ WSGI_APPLICATION = 'app_domainname.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-load_dotenv()
 
 DATABASES = {
     'default': {
@@ -114,13 +117,21 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Настройки аутентификации Django
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',  # Стандартный backend для проверки учетных данных
+]
+
+# Ключ для хранения токенов в сессии
+JWT_SESSION_KEY = "jwt_tokens"
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-RU'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -144,13 +155,44 @@ ENVIRONMENT = os.getenv('DJANGO_ENV', 'development')
 # В зависимости от среды, присваиваем нужный URL
 if ENVIRONMENT == 'production':
     BASE_FILE_URL = 'http://container_fastapi_app:8000/files'
+    DRF_API_BASE_URL = "http://container_drf_app:8000/api"  # URL DRF-сервиса
+    DRF_API_HOST = "app-drf"
     DEBUG = False
     # Для продакшн-режима Django будет обслуживать статические файлы
     # добавляет хеши к именам файлов, предотвращая кэширование устаревших версий файлов браузерами
     # STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.ManifestStaticFilesStorage'
 else:
     BASE_FILE_URL = 'http://127.0.0.1:8001/files'
+    DRF_API_BASE_URL = "http://127.0.0.1:8002/api"  # URL DRF-сервиса
+    DRF_API_HOST = "127.0.0.1" # или ""
     DEBUG = True
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+                'style': '{',
+            },
+            'simple': {
+                'format': '{levelname} {message}',
+                'style': '{',
+            },
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'simple'
+            },
+        },
+        'loggers': {
+            'django.db.backends': {
+                'level': 'DEBUG',
+                'handlers': ['console'],
+                'propagate': False,
+            },
+        },
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

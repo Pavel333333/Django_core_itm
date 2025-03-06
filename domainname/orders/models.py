@@ -17,6 +17,9 @@ class Price(BaseModel):
     price = models.FloatField()                                   # float, цена анализ 1 Кб данных, будем в будущем
                                                                   # считать цену за анализ файла
 
+    class Meta:
+        db_table = 'price'
+
 
 class Cart(BaseModel):
 
@@ -31,4 +34,7 @@ class Cart(BaseModel):
                                                                        # не будет, но номинально мы просто будем менять
                                                                        # статус с по умолчанию при создании заказа
                                                                        # с False на True
+
+    class Meta:
+        db_table = 'cart'
 

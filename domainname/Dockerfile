@@ -14,4 +14,4 @@ RUN pip install -r requirements.txt
 COPY . .
 
 
-RUN chmod a+x /domainname/app.sh
+RUN chmod a+x /domainname/app.sh  # это команда Unix/Linux, которая изменяет права доступа к файлам и директориям

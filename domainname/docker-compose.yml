@@ -2,7 +2,7 @@ networks:
   mynetwork:
     external: true
 
-# docker network create mynetwork - перед созданием контейнеров создаётся общая сеть для двух проектов
+# docker network create mynetwork - перед созданием контейнеров создаётся общая сеть для трёх проектов
 
 services:
   db_django:
@@ -21,8 +21,8 @@ services:
 
   app_django:
     image: app_django_itm
-    build:
-      context: .
+    build:  # этот ключ указывает Docker Compose, что необходимо построить образ для данного сервиса на основе Dockerfile.
+      context: .  # путь к контексту сборки (build context) текущая директория, то есть искать докер нужно в корне проекта
     container_name: container_django_app
     command: ["/domainname/app.sh"]
     env_file:
@@ -37,3 +37,7 @@ services:
      # - ./staticfiles:/domainname/staticfiles # папка для всех статических файлов, собранных докером
     networks:
       - mynetwork
+
+#  nginx:
+#    environment:
+#      - DJANGO_HOST=container_django_app  # Имя контейнера Django

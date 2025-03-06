@@ -38,19 +38,27 @@ document.getElementById("analyzeForm").onsubmit = async function(event) {
     document.getElementById("upload-message").style.display = "none";
     document.getElementById("resultsContainer").innerHTML = "";
 
+    // Извлечение данных из формы
     let formData = new FormData(this);
     let docIdsStr = formData.get('doc_ids').trim();
+
+    // Разделяем строки на ID и убираем лишние пробелы
     let docIds = docIdsStr.split(',').map(id => id.trim()).filter(id => id !== "");
 
+    // Проверка на наличие недопустимых значений
     let invalidIds = docIds.filter(id => isNaN(id) || id === "" || /[^0-9]/.test(id));
 
     if (invalidIds.length > 0) {
         document.getElementById("error-message").textContent = "Ошибка: ID должен быть числовым и разделяться запятой.";
         document.getElementById("error-message").style.display = "block";
-        return;
+        return; // Прерываем выполнение, если есть ошибочные ID
     }
 
+    // Создаем строку для отправки всех ID в одном запросе
     let idsToSend = docIds.join(',');
+
+    // Формирование и отправка запроса
+    // запрос уходит на текущую страницу по параметру this.action
 
     let response = await fetch(this.action, {
         method: "POST",
