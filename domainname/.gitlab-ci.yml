@@ -11,7 +11,7 @@ deploy-job:
     - cat "$SSH_PRIVATE_KEY" | ssh-add -
     - mkdir -p ~/.ssh && ssh-keyscan -H 82.202.138.125 >> ~/.ssh/known_hosts
 
-    # Очистка и создание директории на сервере
+    # Очистка и создание директории на сервере.
     - ssh pavel@82.202.138.125 "sudo rm -rf /home/pavel/dev/django_core_itm/domainname && sudo mkdir -p /home/pavel/dev/django_core_itm/domainname"
 
     # Установка прав
