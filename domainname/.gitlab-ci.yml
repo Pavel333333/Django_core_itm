@@ -7,7 +7,7 @@ deploy-job:
     # проверка успешности команд
     - set -e
 
-    # Обновляем список пакетов и устанавливаем SSH-клиент (если он не установлен).
+    # Обновляем список пакетов и устанавливаем SSH-клиент (если он не установлен)
     - apt-get update && apt-get install -y openssh-client  # Устанавливаем SSH-клиент, если его нет
     - if ! pgrep ssh-agent > /dev/null; then eval $(ssh-agent -s); fi  # Запускаем SSH-агент, если он ещё не запущен
     - if [ -n "$SSH_PRIVATE_KEY" ]; then echo "$SSH_PRIVATE_KEY" | ssh-add -; fi  # Добавляем приватный SSH-ключ в агент, если он задан
