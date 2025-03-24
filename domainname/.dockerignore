@@ -3,3 +3,4 @@
 .git/
 *.pyc
 app_domainname/.env
+try.py
