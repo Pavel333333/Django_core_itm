@@ -1,0 +1,38 @@
+stages:
+  - deploy
+
+deploy-job:
+  stage: deploy
+  script:
+    # проверка успешности команд
+    - set -e
+
+    # Обновляем список пакетов и устанавливаем SSH-клиент (если он не установлен)
+    - apt-get update && apt-get install -y openssh-client  # Устанавливаем SSH-клиент, если его нет
+    - if ! pgrep ssh-agent > /dev/null; then eval $(ssh-agent -s); fi  # Запускаем SSH-агент, если он ещё не запущен
+    - if [ -n "$SSH_PRIVATE_KEY" ]; then echo "$SSH_PRIVATE_KEY" | ssh-add -; fi  # Добавляем приватный SSH-ключ в агент, если он задан
+    - mkdir -p ~/.ssh  # Создаём папку ~/.ssh, если её нет
+    - if [ ! -s ~/.ssh/known_hosts ]; then ssh-keyscan -H 82.202.138.125 > ~/.ssh/known_hosts; fi  # Добавляем SSH-ключ сервера в known_hosts, если файл пуст или отсутствует
+
+    # Очистка старого дерева папок и файлов на сервере
+    - ssh pavel@82.202.138.125 "sudo rm -rf /home/pavel/dev/django_core_itm/domainname"
+
+    # Копирование всей структуры директорий и файлов с локальной машины на сервер с помощью rsync
+    - rsync -avz $CI_PROJECT_DIR/ pavel@82.202.138.125:/home/pavel/dev/django_core_itm/domainname/
+
+    # Установка прав на все директории и файлы
+    - ssh pavel@82.202.138.125 "sudo chown -R pavel:pavel /home/pavel/dev/django_core_itm/domainname"
+
+    # Перезапуск приложения
+    - ssh pavel@82.202.138.125 "cd /home/pavel/dev/django_core_itm/domainname && docker compose down && docker image prune -f && docker network prune -f && MODE=$MODE DB_HOST=$DB_HOST DB_PORT=$DB_PORT DB_NAME=$DB_NAME DB_USER=$DB_USER DB_PASSWORD=$DB_PASSWORD docker compose up -d --build"
+  variables:
+    MODE: "production"
+    DB_HOST: "container_django_db"
+    DB_PORT: "5432"
+    DB_NAME: "django_db"
+    DB_USER: "$DB_USER"
+    DB_PASSWORD: "$DB_PASSWORD"
+  tags:
+    - django_core_itm
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "main"'

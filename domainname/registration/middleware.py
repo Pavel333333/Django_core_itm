@@ -21,7 +21,7 @@ class JWTMiddleware:
 
         response = self.get_response(request)
 
-        # Проверяем и обновляем до вызова view access, если он истёк
+        # Проверяем и обновляем access до вызова view, если он истёк
         if not self.token_service.is_access_token_valid(access_token):
             try:
                 new_access = self.token_service.refresh_access_token(refresh_token)
@@ -36,10 +36,10 @@ class JWTMiddleware:
 
         # Обновляем куки после обработки запроса
         if not self.token_service.is_access_token_valid(
-                tokens.get("access")):  # Строка 27: Изменено - проверяем исходный токен
+                tokens.get("access")):
             response.set_cookie(
                 'access_token',
-                access_token,  # Строка 30: Изменено - используем актуальный токен
+                access_token,
                 httponly=True,
                 samesite='Lax',
                 secure=False,

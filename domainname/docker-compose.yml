@@ -5,19 +5,19 @@ networks:
 # docker network create mynetwork - перед созданием контейнеров создаётся общая сеть для трёх проектов
 
 services:
-  db_django:
-    image: postgres:latest
-    container_name: container_django_db
-    environment:
-      - POSTGRES_DB=django_core_itm
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    env_file:
-      - .env-not-dev
-    ports:
-      - "5434:5432" # первая цифра внешний порт, вторая - какой порт слушается внутри контейнера
-    networks:
-      - mynetwork
+#  db_django:
+#    image: postgres:latest
+#    container_name: container_django_db
+#    environment:
+#      - POSTGRES_DB=django_core_itm
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=postgres
+#    env_file:
+#      - .env-not-dev
+#    ports:
+#      - "5434:5432" # первая цифра внешний порт, вторая - какой порт слушается внутри контейнера
+#    networks:
+#      - mynetwork
 
   app_django:
     image: app_django_itm
