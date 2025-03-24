@@ -29,5 +29,6 @@ deploy-job:
     DB_NAME: "django_core_itm"
     DB_USER: "$DB_USER"
     DB_PASSWORD: "$DB_PASSWORD"
+    SECRET_KEY: "SECRET_KEY"
   rules:
     - if: '$CI_COMMIT_REF_NAME == "main"'
