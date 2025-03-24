@@ -3,6 +3,8 @@ stages:
 
 deploy-job:
   stage: deploy
+  tags:
+    - django_core_itm
   script:
     # проверка успешности команд
     - set -e
@@ -10,7 +12,7 @@ deploy-job:
     # Обновляем список пакетов и устанавливаем SSH-клиент (если он не установлен)
     - apt-get update && apt-get install -y openssh-client  # Устанавливаем SSH-клиент, если его нет
     - if ! pgrep ssh-agent > /dev/null; then eval $(ssh-agent -s); fi  # Запускаем SSH-агент, если он ещё не запущен
-    - if [ -n "$SSH_PRIVATE_KEY" ]; then echo "$SSH_PRIVATE_KEY" | ssh-add -; fi  # Добавляем приватный SSH-ключ в агент, если он задан
+    - if [ -n "$SSH_PRIVATE_KEY" ]; then cat "$SSH_PRIVATE_KEY" | ssh-add -; fi  # Добавляем приватный SSH-ключ в агент, если он задан
     - mkdir -p ~/.ssh  # Создаём папку ~/.ssh, если её нет
     - if [ ! -s ~/.ssh/known_hosts ]; then ssh-keyscan -H 82.202.138.125 > ~/.ssh/known_hosts; fi  # Добавляем SSH-ключ сервера в known_hosts, если файл пуст или отсутствует
 
@@ -24,7 +26,8 @@ deploy-job:
     - ssh pavel@82.202.138.125 "sudo chown -R pavel:pavel /home/pavel/dev/django_core_itm/domainname"
 
     # Перезапуск приложения
-    - ssh pavel@82.202.138.125 "cd /home/pavel/dev/django_core_itm/domainname && docker compose down && docker image prune -f && docker network prune -f && MODE=$MODE DB_HOST=$DB_HOST DB_PORT=$DB_PORT DB_NAME=$DB_NAME DB_USER=$DB_USER DB_PASSWORD=$DB_PASSWORD docker compose up -d --build"
+    - ssh pavel@82.202.138.125 "cd /home/pavel/dev/django_core_itm/domainname && docker stop container_django_app || true && docker rm container_django_app || true && docker image prune -f && docker network prune -f && docker run -d --name container_django_app --network mynetwork -p 5555:8000 -v ./media:/domainname/media -v ./static:/domainname/static -e MODE=$MODE -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -e DB_NAME=$DB_NAME -e DB_USER=$DB_USER -e DB_PASSWORD=$DB_PASSWORD app_django_itm /domainname/app.sh"
+    # MODE=$MODE DB_HOST=$DB_HOST DB_PORT=$DB_PORT DB_NAME=$DB_NAME DB_USER=$DB_USER DB_PASSWORD=$DB_PASSWORD docker compose up -d --build"
   variables:
     MODE: "production"
     DB_HOST: "container_django_db"
@@ -32,7 +35,5 @@ deploy-job:
     DB_NAME: "django_db"
     DB_USER: "$DB_USER"
     DB_PASSWORD: "$DB_PASSWORD"
-  tags:
-    - django_core_itm
   rules:
     - if: '$CI_COMMIT_REF_NAME == "main"'
