@@ -11,15 +11,17 @@ deploy-job:
     - cat "$SSH_PRIVATE_KEY" | ssh-add -
     - mkdir -p ~/.ssh && ssh-keyscan -H 82.202.138.125 >> ~/.ssh/known_hosts
 
-    # Очистка старого дерева папок
-    - ssh pavel@82.202.138.125 "sudo rm -rf /home/pavel/dev/django_core_itm/domainname"
+    # Очистка и создание директории на сервере
+    - ssh pavel@82.202.138.125 "sudo rm -rf /home/pavel/dev/django_core_itm/domainname && sudo mkdir -p /home/pavel/dev/django_core_itm/domainname"
+
+    # Установка прав
+    - ssh pavel@82.202.138.125 "sudo chown -R pavel:pavel /home/pavel/dev/django_core_itm/domainname"
 
     # Копирование содержимого папки domainname
     - scp -r $CI_PROJECT_DIR/domainname/* pavel@82.202.138.125:/home/pavel/dev/django_core_itm/domainname/
 
-    # Установка прав и запуск контейнера
+    # Запуск контейнера
     - ssh pavel@82.202.138.125 "
-        sudo chown -R pavel:pavel /home/pavel/dev/django_core_itm/domainname &&
         cd /home/pavel/dev/django_core_itm/domainname &&
         docker stop container_django_app || true &&
         docker rm container_django_app || true &&
