@@ -26,7 +26,7 @@ deploy-job:
     MODE: "production"
     DB_HOST: "container_django_db"
     DB_PORT: "5432"
-    DB_NAME: "django_db"
+    DB_NAME: "django_core_itm"
     DB_USER: "$DB_USER"
     DB_PASSWORD: "$DB_PASSWORD"
   rules:
