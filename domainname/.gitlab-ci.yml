@@ -21,9 +21,9 @@ deploy-job:
     - scp -r $CI_PROJECT_DIR/domainname/* pavel@82.202.138.125:/home/pavel/dev/django_core_itm/domainname/
 
     # Запуск контейнера
-    - ssh pavel@82.202.138.125 "cd /home/pavel/dev/django_core_itm/domainname && docker stop container_django_app || true && docker rm container_django_app || true && docker image prune -f && docker network prune -f && docker build -t app_django_itm . && docker run -d --name container_django_app --network mynetwork -p 5555:8000 -v ./media:/domainname/media -v ./static:/domainname/static -e MODE=$MODE -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -e DB_NAME=$DB_NAME -e DB_USER=$DB_USER -e DB_PASSWORD=$DB_PASSWORD -e SECRET_KEY=$SECRET_KEY app_django_itm /domainname/app.sh"
+    - ssh pavel@82.202.138.125 "cd /home/pavel/dev/django_core_itm/domainname && docker stop container_django_app || true && docker rm container_django_app || true && docker image prune -f && docker network prune -f && docker build -t app_django_itm . && docker run -d --name container_django_app --network mynetwork -p 5555:8000 -v ./media:/domainname/media -v ./static:/domainname/static -e DJANGO_ENV=$DJANGO_ENV -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -e DB_NAME=$DB_NAME -e DB_USER=$DB_USER -e DB_PASSWORD=$DB_PASSWORD -e SECRET_KEY=$SECRET_KEY app_django_itm /domainname/app.sh"
   variables:
-    MODE: "production"
+    DJANGO_ENV: "production"
     DB_HOST: "container_django_db"
     DB_PORT: "5432"
     DB_NAME: "django_core_itm"
