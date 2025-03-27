@@ -25,12 +25,12 @@ services:
       context: .  # путь к контексту сборки (build context) текущая директория, то есть искать докер нужно в корне проекта
     container_name: container_django_app
     command: ["/domainname/app.sh"]
-    env_file:
-      - .env-not-dev
+#    env_file:
+#      - .env-not-dev
     ports:
       - "5555:8000" # первая цифра внешний порт, вторая - какой порт слушается внутри контейнера
-    depends_on:
-      - db_django
+#    depends_on:
+#      - db_django
     volumes:
       - ./media:/domainname/media # создание папки media в контейнере
       - ./static:/domainname/static  # Путь к папке статики на хосте
